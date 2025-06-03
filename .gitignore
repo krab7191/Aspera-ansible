@@ -1,0 +1,4 @@
+hosts.ini
+*.license
+.vscode
+env_vars.yml

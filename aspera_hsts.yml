@@ -1,0 +1,233 @@
+- name: Install Aspera HSTS on RHEL 8.5 VM
+  hosts: all
+  become: yes
+  vars_files:
+  - env_vars.yml
+  tasks:
+  - name: Change hostname to hsts
+    hostname:
+      name: hsts
+
+  - name: Upgrade installed software (DNF)
+    dnf:
+      name: "*"
+      state: latest
+
+  - name: Install packages
+    package:
+      name:
+      - nano
+      - net-tools
+      state: present
+
+  - name: Alias l='ls -lah' for itzuser
+    lineinfile:
+      path: /home/itzuser/.bashrc
+      line: "alias l='ls -lah'"
+      create: yes
+
+  - name: Alias l='ls -lah' for root
+    lineinfile:
+      path: /root/.bashrc
+      line: "alias l='ls -lah'"
+      create: yes
+
+  - name: Edit /etc/ssh/sshd_config to add Port 33001
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      line: "Port 33001"
+      create: yes
+    notify: Restart sshd
+
+  - name: Prepare install dir /opt/software
+    file:
+      path: /opt/software
+      state: directory
+
+  - name: Download hsts.rpm from IBM Aspera
+    command: curl -o hsts.rpm {{ HSTS_RPM_URL }}
+    args:
+      chdir: /opt/software
+      creates: /opt/software/hsts.rpm
+    register: curl_result
+    retries: 3
+    delay: 5
+    until: curl_result.rc == 0
+
+  - name: Install HSTS RPM if not already installed
+    command: yum localinstall -y hsts.rpm
+    args:
+      chdir: /opt/software
+      creates: /opt/aspera/bin
+
+  - name: Edit /opt/aspera/etc/aspera-license and add the license contents
+    copy:
+      src: hsts.license
+      dest: /opt/aspera/etc/aspera-license
+      mode: '0744'
+
+  - name: Output the result of ascp -A to the console
+    command: ascp -A
+    register: ascp_output
+
+  - name: Print ascp output
+    debug:
+      var: ascp_output.stdout_lines
+
+  - name: Set the Transfer Node IP address and SSH Port number
+    command: asconfigurator -F "set_server_data;server_name,{{ ansible_ssh_host }};ssh_port,33001"
+
+  - name: Run asconfigurator -x "set_server_data;activity_logging,true"
+    command: asconfigurator -x "set_server_data;activity_logging,true"
+
+  - name: Create /data directory and set permissions
+    file:
+      path: /data
+      state: directory
+      mode: '0777'
+
+  - name: Turn on async activity logging
+    command: asconfigurator -x "set_client_data;async_management_activity_logging,true"
+
+  - name: Turn on async activity logging
+    command: asconfigurator -x "set_node_data;async_activity_logging,true"
+
+  handlers:
+  - name: Restart sshd
+    systemd:
+      name: sshd
+      state: restarted
+      enabled: yes
+
+- name: Faspex User Setup
+  hosts: all
+  become: yes
+  vars_files:
+  - env_vars.yml
+  tasks:
+  - name: Add transfer user
+    user:
+      name: consoletransferadmin
+      shell: /bin/bash
+      state: present
+
+  - name: Configure transfer user
+    command: asconfigurator -F \ "set_user_data;user_name,consoletransferadmin;absolute,/tmp/"
+
+  - name: Check users
+    command: /opt/aspera/bin/asnodeadmin -l
+    register: users
+
+  - name: Set password for transfer user
+    command: /opt/aspera/bin/asnodeadmin -a -u consoletransferadmin -p {{ CONSOLE_ADMIN_PASSWORD }} -x consoletransferadmin --acl-set "admin,impersonation"
+    when: "'consoletransferadmin' not in users.stdout"
+
+  - name: Create Faspex user
+    user:
+      name: faspextransferadmin
+      shell: /bin/bash
+      state: present
+
+  - name: Print users output
+    debug:
+      var: users.stdout_lines
+
+  - name: Configure SSH auth for Faspex user
+    file:
+      path: /home/faspextransferadmin/.ssh
+      state: directory
+      mode: '0700'
+
+  - name: Mod authorized_keys for Faspex user
+    copy:
+      src: /opt/aspera/var/aspera_tokenauth_id_rsa.pub
+      dest: /home/faspextransferadmin/.ssh/authorized_keys
+      mode: '0600'
+      remote_src: yes
+
+  - name: Set ownership for Faspex user's .ssh directory
+    file:
+      path: /home/faspextransferadmin/.ssh
+      owner: faspextransferadmin
+      group: faspextransferadmin
+      recurse: yes
+
+  - name: Create Faspex data dir
+    file:
+      path: /data/faspex_data
+      state: directory
+      owner: faspextransferadmin
+      group: faspextransferadmin
+
+  - name: Define token auth
+    command: asconfigurator -F "set_user_data;user_name,faspextransferadmin;authorization_transfer_in_value,token;authorization_transfer_out_value,token"
+
+  - name: Set token encryption string
+    command: asconfigurator -F "set_user_data;user_name,faspextransferadmin;token_encryption_key,{{ TOKEN_ENCRYPTION_KEY }}"
+
+  - name: Define docroot storage
+    command: asconfigurator -F "set_user_data;user_name,faspextransferadmin;absolute,/data/faspex_data/"
+
+  - name: Make sure everything is set up correctly
+    shell: |
+      ls -al /home/faspextransferadmin/.ssh
+      ls -lta /data/faspex_data
+      asconfigurator -F "get_user_data;user_name,faspextransferadmin" | grep in_value
+      asconfigurator -F "get_user_data;user_name,faspextransferadmin" | grep out_value
+      asconfigurator -F "get_user_data;user_name,faspextransferadmin" | grep token_encryption_key
+      asconfigurator -F "get_user_data;user_name,faspextransferadmin" | grep docroot
+    register: setup
+
+  - name: Setup
+    debug:
+      var: setup.stdout_lines
+
+  - name: Check users
+    command: /opt/aspera/bin/asnodeadmin -l
+    register: users
+
+  - name: Create regular node user
+    command: /opt/aspera/bin/asnodeadmin -a -u faspexnodeuser -p {{ FASPEX_NODE_PASSWORD }} -x faspextransferadmin
+    when: "'faspexnodeuser' not in users.stdout"
+
+  - name: Users
+    debug:
+      var: users.stdout_lines
+
+  - name: Set httpd backup
+    shell: |
+      /opt/aspera/bin/asconfigurator -x "set_http_server_data;enable_http,true"
+      /opt/aspera/bin/asconfigurator -x "set_http_server_data;enable_https,true"
+      /opt/aspera/bin/asconfigurator -x "set_http_server_data;http_port,8080"
+      /opt/aspera/bin/asconfigurator -x "set_http_server_data;https_port,8443"
+      /opt/aspera/bin/asconfigurator -x "set_http_server_data;cert_file,/opt/aspera/etc/aspera_server_cert.pem"
+      /opt/aspera/bin/asconfigurator -x "set_http_server_data;key_file,/opt/aspera/etc/aspera_server_key.pem"
+
+  - name: Check config
+    command: /opt/aspera/bin/asuserdata -b -t
+
+  - name: Restart asperacentral service
+    systemd:
+      name: asperacentral
+      state: restarted
+      enabled: yes
+
+  - name: Restart asperanoded service
+    systemd:
+      name: asperanoded
+      state: restarted
+      enabled: yes
+
+  - name: Restart asperahttpd service
+    systemd:
+      name: asperahttpd
+      state: restarted
+      enabled: yes
+
+  - name: Check running services
+    shell: systemctl list-units | grep aspera
+    register: aspera_services
+
+  - name: Show running Aspera services
+    debug:
+      var: aspera_services.stdout_lines

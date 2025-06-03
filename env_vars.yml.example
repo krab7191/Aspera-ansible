@@ -1,0 +1,3 @@
+CONSOLE_ADMIN_PASSWORD: password for Console transfer admin
+HSTS_IP: IP address for HSTS machine
+TOKEN_ENCRYPTION_KEY: long encryption key here (20+ random chars)
