@@ -1,4 +1,5 @@
-hosts.ini
+*.ini
 *.license
 .vscode
 env_vars.yml
+*.pem

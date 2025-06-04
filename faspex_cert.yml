@@ -1,0 +1,49 @@
+- name: Install and run Certbot on Faspex server
+  hosts: all
+  become: yes
+  vars_files:
+  - env_vars.yml
+  tasks:
+  - name: Import EPEL GPG key
+    rpm_key:
+      state: present
+      key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8
+
+  - name: Install EPEL release from official URL
+    dnf:
+      name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+      state: present
+
+  - name: Install Certbot
+    dnf:
+      name: certbot
+      state: present
+
+  - name: Stop Faspex service
+    command: faspexctl stop
+    become: yes
+
+  - name: Check if SSL certificate already exists
+    stat:
+      path: /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/fullchain.pem
+    register: cert_stat
+
+  - name: Generate SSL certificate using Certbot (standalone method)
+    command: >
+      certbot certonly --standalone --preferred-challenges http --domain {{ FASPEX_DOMAIN }} --email {{ WEB_ADMIN_EMAIL }} --agree-tos --non-interactive
+    when: not cert_stat.stat.exists
+    register: certbot_result
+    changed_when: "'Congratulations' in certbot_result.stdout"
+
+  - name: Use Faspex to install certs
+    command: asctl apache:install_ssl_cert /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/fullchain.pem /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/privkey.pem /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/chain.pem
+    become: yes
+
+  - name: Start Faspex service
+    command: faspexctl start
+    become: yes
+
+  - name: Show Certbot output
+    debug:
+      var: certbot_result.stdout
+    when: certbot_result is defined

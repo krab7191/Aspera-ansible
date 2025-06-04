@@ -1,0 +1,114 @@
+- name: Install Aspera Faspex on RHEL 8.5 VM
+  hosts: all
+  become: yes
+  vars_files:
+  - env_vars.yml
+  tasks:
+  - name: Change hostname to faspex
+    hostname:
+      name: faspex
+
+  - name: Upgrade installed software (DNF)
+    dnf:
+      name: "*"
+      state: latest
+
+  - name: Install dnf-plugins-core
+    dnf:
+      name: dnf-plugins-core
+      state: present
+
+  - name: Install yum-utils
+    yum:
+      name: yum-utils
+      state: present
+
+  - name: Add Docker CE repository for RHEL 8.5
+    yum_repository:
+      name: docker-ce
+      description: Docker CE Stable Repository
+      baseurl: https://download.docker.com/linux/centos/8/$basearch/stable
+      enabled: yes
+      gpgcheck: yes
+      gpgkey: https://download.docker.com/linux/centos/gpg
+
+  - name: Install packages
+    package:
+      name:
+      - nano
+      - net-tools
+      - docker-ce
+      - docker-ce-cli
+      state: present
+
+  - name: Enable and start Docker service
+    service:
+      name: docker
+      enabled: yes
+      state: started
+
+  - name: Alias l='ls -lah' for itzuser
+    lineinfile:
+      path: /home/itzuser/.bashrc
+      line: "alias l='ls -lah'"
+      create: yes
+
+  - name: Alias l='ls -lah' for root
+    lineinfile:
+      path: /root/.bashrc
+      line: "alias l='ls -lah'"
+      create: yes
+
+  - name: Prepare install dir /opt/software/faspex
+    file:
+      path: /opt/software/faspex
+      state: directory
+
+  - name: Prepare install dir /opt/software/common
+    file:
+      path: /opt/software/common
+      state: directory
+
+  - name: Download faspex.rpm from Fix central
+    command: curl -o faspex.rpm {{ FASPEX_RPM_URL }}
+    args:
+      chdir: /opt/software/faspex
+      creates: /opt/software/faspex/faspex.rpm
+    register: curl_result_faspex
+    retries: 3
+    delay: 5
+    until: curl_result_faspex.rc == 0
+
+  - name: Download common.rpm from Fix central
+    command: curl -o common.rpm {{ COMMON_RPM_URL }}
+    args:
+      chdir: /opt/software/common
+      creates: /opt/software/common/common.rpm
+    register: curl_result_common
+    retries: 3
+    delay: 5
+    until: curl_result_common.rc == 0
+
+  - name: Check if faspex exists
+    stat:
+      path: /opt/aspera/faspex
+    register: faspex
+
+  - name: Check if common exists
+    stat:
+      path: /opt/aspera/common
+    register: common
+
+  - name: Install Faspex RPM if not already installed
+    command: yum localinstall -y faspex.rpm
+    args:
+      chdir: /opt/software/faspex
+      creates: /opt/aspera/faspex
+    when: not faspex.stat.exists
+
+  - name: Install Common RPM if not already installed
+    command: yum localinstall -y common.rpm
+    args:
+      chdir: /opt/software/common
+      creates: /opt/aspera/common
+    when: not common.stat.exists

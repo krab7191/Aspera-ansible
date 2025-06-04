@@ -1,3 +1,10 @@
-CONSOLE_ADMIN_PASSWORD: password for Console transfer admin
 HSTS_IP: IP address for HSTS machine
+CONSOLE_ADMIN_PASSWORD: password for Console transfer admin
+FASPEX_NODE_PASSWORD: password for faspex user
 TOKEN_ENCRYPTION_KEY: long encryption key here (20+ random chars)
+HSTS_RPM_URL: https://delivery04-mul.dhe.ibm.com/sdfdl/v2/sar/CM/OS/0c3kt/2/Xa.2/Xb.jusyLTSp44S0BmNZUdsJNTd7ZB8VTI5kAbExV2_SOFpYV9ucueWWuuzqAzU/Xc.CM/OS/0c3kt/2/ibm-aspera-hsts-4.4.4.1293-linux-64-release.rpm/Xd./Xf.Lpr./Xg.13375524/Xi.habanero/XY.habanero/XZ.fV_FKzBEwcDRcJijNI8kBYlyCimPX2Ve/ibm-aspera-hsts-4.4.4.1293-linux-64-release.rpm
+
+FASPEX_IP: IP for faspex machine
+FASPEX_RPM_URL: https://delivery04-mul.dhe.ibm.com/sdfdl/v2/sar/CM/OS/0cz9y/0/Xa.2/Xb.jusyLTSp44S0BmNZZW2Bnk5Xi05bW6B8Jn7XndnD9bfBZ22BmLkxzv8zSX0/Xc.CM/OS/0cz9y/0/ibm-aspera-faspex-5.0.12.8452.x86_64.rpm/Xd./Xf.Lpr./Xg.13375882/Xi.habanero/XY.habanero/XZ.Z2D09q-4OZ8Si5zdUn9ahMJNWg8-2zcp/ibm-aspera-faspex-5.0.12.8452.x86_64.rpm
+FASPEX_DOMAIN: aspera-faspex.ddns.net
+WEB_ADMIN_EMAIL: karsten@ibm.com
