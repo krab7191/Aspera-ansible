@@ -20,7 +20,7 @@
       state: present
 
   - name: Stop Faspex service
-    command: faspexctl stop
+    command: faspexctl stop router
 
   - name: Check if SSL certificate already exists
     stat:
@@ -34,11 +34,26 @@
     register: certbot_result
     changed_when: "'Congratulations' in certbot_result.stdout"
 
-  - name: Use Faspex to install certs
-    command: asctl apache:install_ssl_cert /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/fullchain.pem /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/privkey.pem /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/chain.pem
+  - name: Copy certbot cert
+    copy:
+      src: /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/fullchain.pem
+      dest: /opt/aspera/faspex/conf/nginx/cert.pem
+      owner: aspweb
+      group: aspweb
+      mode: '0400'
+    when: certbot_result is defined or cert_stat.stat.exists
+
+  - name: Copy certbot key
+    copy:
+      src: /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/privkey.pem
+      dest: /opt/aspera/faspex/conf/nginx/key.pem
+      owner: aspweb
+      group: aspweb
+      mode: '0400'
+    when: certbot_result is defined or cert_stat.stat.exists
 
   - name: Start Faspex service
-    command: faspexctl start
+    command: faspexctl start router
 
   - name: Show Certbot output
     debug:
