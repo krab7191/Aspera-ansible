@@ -3,3 +3,5 @@
 .vscode
 env_vars.yml
 *.pem
+.DS_Store
+server_info.zip

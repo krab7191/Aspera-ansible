@@ -1,12 +1,18 @@
 HSTS_IP: IP address for HSTS machine
 FASPEX_IP: IP for faspex machine
+CONSOLE_IP: IP for console machine
+GATEWAY_IP: IP for gateway machine
 
 FASPEX_NODE_PASSWORD: password for faspex user
 CONSOLE_ADMIN_PASSWORD: password for Console transfer admin
 TOKEN_ENCRYPTION_KEY: long encryption key here (20+ random chars)
 WEB_ADMIN_EMAIL: karsten@ibm.com
 FASPEX_DOMAIN: aspera-faspex.ddns.net
+CONSOLE_DOMAIN: aspera-console.ddns.net
+GATEWAY_DOMAIN: aspera-gateway.ddns.net
 
 HSTS_RPM_URL: https://delivery04-mul.dhe.ibm.com/sdfdl/v2/sar/CM/OS/0c3kt/2/Xa.2/Xb.jusyLTSp44S0BmNZUdsJNTd7ZB8VTI5kAbExV2_SOFpYV9ucueWWuuzqAzU/Xc.CM/OS/0c3kt/2/ibm-aspera-hsts-4.4.4.1293-linux-64-release.rpm/Xd./Xf.Lpr./Xg.13375524/Xi.habanero/XY.habanero/XZ.fV_FKzBEwcDRcJijNI8kBYlyCimPX2Ve/ibm-aspera-hsts-4.4.4.1293-linux-64-release.rpm
 FASPEX_RPM_URL: https://delivery04-mul.dhe.ibm.com/sdfdl/v2/sar/CM/OS/0cz9y/0/Xa.2/Xb.jusyLTSp44S0BmNZZW2Bnk5Xi05bW6B8Jn7XndnD9bfBZ22BmLkxzv8zSX0/Xc.CM/OS/0cz9y/0/ibm-aspera-faspex-5.0.12.8452.x86_64.rpm/Xd./Xf.Lpr./Xg.13375882/Xi.habanero/XY.habanero/XZ.Z2D09q-4OZ8Si5zdUn9ahMJNWg8-2zcp/ibm-aspera-faspex-5.0.12.8452.x86_64.rpm
 COMMON_RPM_URL: https://delivery04-mul.dhe.ibm.com/sdfdl/v2/sar/CM/OS/0cius/0/Xa.2/Xb.jusyLTSp44S0BmNha4L3DhcyBOQDM2Gw_lpBbCZfQUWx1QCJo8v4NS8tJXQ/Xc.CM/OS/0cius/0/ibm-aspera-common-1.6.2.40-db1a151.x86_64.rpm/Xd./Xf.Lpr./Xg.13377005/Xi.habanero/XY.habanero/XZ.h92XKDC8P_jI8wka_lRKkII9f1hR9Gqq/ibm-aspera-common-1.6.2.40-db1a151.x86_64.rpm
+CONSOLE_RPM_URL: https://delivery04-mul.dhe.ibm.com/sdfdl/v2/sar/CM/OS/0cius/0/Xa.2/Xb.jusyLTSp44S0BmNyhteTLpCw8DXO_5D2N4oILUV9C-zE79MCicnoDhfG_5o/Xc.CM/OS/0cius/0/ibm-aspera-console-3.4.5.31-65f2112.x86_64.rpm/Xd./Xf.Lpr./Xg.13384427/Xi.habanero/XY.habanero/XZ.GboiYtVp90vkvHwARzCoUD-lHrjLs65D/ibm-aspera-console-3.4.5.31-65f2112.x86_64.rpm
+HTTP_GATEWAY_RPM_URL: https://delivery04-mul.dhe.ibm.com/sdfdl/v2/sar/CM/OS/0afas/1/Xa.2/Xb.jusyLTSp44S0BmNyhp5zkqXUfKtCzhFGhvaH0JTAu_mUCMLwDbMGqhr9Exs/Xc.CM/OS/0afas/1/ibm-aspera-httpgateway-2.3.0.156-b3b9633.x86_64.rpm/Xd./Xf.Lpr./Xg.13384453/Xi.habanero/XY.habanero/XZ.CLX-JcbS_r6xW-IzAq9n1vHUAzwKHc-6/ibm-aspera-httpgateway-2.3.0.156-b3b9633.x86_64.rpm
