@@ -23,10 +23,14 @@ Ansible playbooks to install Aspera HSTS, Faspex, Console, Common, and HTTP Gate
    - Fill out FASPEX_DOMAIN & WEB_ADMIN_EMAIL variables
    - Run faspex_cert.yml: `ansible-playbook -i faspex_hosts.ini faspex_cert.yml`
 
-#### Console
+#### Console:
 1. Run `ansible-playbook -i console_hosts.ini aspera_console.yml`
 2. SSH into machine and run `asctl console:setup` to finish configuration
 3. Log into Console UI and add the License and change password
 4. Add HSTS node on port 33001, Default endpoint type: "Node API", and check "Create default Console groups"
 5. (Optional) Set up SMTP details to enable notifications
 6. (Optional) run "console_cert.yml" to install certbot certs for console: `ansible-playbook -i console_hosts.ini console_cert.yml`
+
+#### HTTP Gateway:
+1. Run `ansible-playbook -i gateway_hosts.ini aspera_gateway.yml`
+2. In Faspex UI enable HTTP gateway in admin panel.

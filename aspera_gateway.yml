@@ -1,0 +1,129 @@
+- name: Install Aspera HTTP Gateway on RHEL 8.5 VM
+  hosts: all
+  become: yes
+  vars_files:
+  - env_vars.yml
+  tasks:
+  - name: Change hostname to gateway
+    hostname:
+      name: gateway
+
+  - name: Upgrade installed software (DNF)
+    dnf:
+      name: "*"
+      state: latest
+
+  - name: Import EPEL GPG key
+    rpm_key:
+      state: present
+      key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8
+
+  - name: Install EPEL release from official URL
+    dnf:
+      name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+      state: present
+
+  - name: Install packages
+    package:
+      name:
+      - nano
+      - net-tools
+      - certbot
+      state: present
+
+  - name: Prepare install dir /opt/software
+    file:
+      path: /opt/software
+      state: directory
+
+  - name: Alias l='ls -lah' for itzuser
+    lineinfile:
+      path: /home/itzuser/.bashrc
+      line: "alias l='ls -lah'"
+      create: yes
+
+  - name: Alias l='ls -lah' for root
+    lineinfile:
+      path: /root/.bashrc
+      line: "alias l='ls -lah'"
+      create: yes
+
+  - name: Download gateway.rpm from Fix central
+    command: curl -o gateway.rpm {{ HTTP_GATEWAY_RPM_URL }}
+    args:
+      chdir: /opt/software
+      creates: /opt/software/gateway.rpm
+    register: curl_result_gateway
+    retries: 3
+    delay: 5
+    until: curl_result_gateway.rc == 0
+
+  - name: Check if gateway exists
+    stat:
+      path: /opt/aspera/httpgateway
+    register: gateway
+
+  - name: Install Gateway RPM if not already installed
+    command: yum localinstall -y gateway.rpm
+    args:
+      chdir: /opt/software
+      creates: /opt/aspera/httpgateway
+    when: not gateway.stat.exists
+
+  - name: Check if SSL certificate already exists
+    stat:
+      path: /etc/letsencrypt/live/{{ GATEWAY_DOMAIN }}/fullchain.pem
+    register: cert_stat
+
+  - name: Generate SSL certificate using Certbot (standalone method)
+    command: >
+      certbot certonly --standalone --preferred-challenges http --domain {{ GATEWAY_DOMAIN }} --email {{ WEB_ADMIN_EMAIL }} --agree-tos --non-interactive
+    when: not cert_stat.stat.exists
+    register: certbot_result
+    changed_when: "'Congratulations' in certbot_result.stdout"
+
+  - name: Backup existing cert
+    copy:
+      src: /opt/aspera/httpgateway/config/server.crt
+      dest: /opt/aspera/httpgateway/config/server.crt.bak
+      remote_src: yes
+
+  - name: Backup existing key
+    copy:
+      src: /opt/aspera/httpgateway/config/server.key
+      dest: /opt/aspera/httpgateway/config/server.key.bak
+      remote_src: yes
+
+  - name: Copy certbot cert
+    copy:
+      src: /etc/letsencrypt/live/{{ GATEWAY_DOMAIN }}/fullchain.pem
+      dest: /opt/aspera/httpgateway/config/server.crt
+      owner: root
+      group: root
+      mode: '0400'
+      remote_src: yes
+    when: certbot_result is defined or cert_stat.stat.exists
+
+  - name: Copy certbot key
+    copy:
+      src: /etc/letsencrypt/live/{{ GATEWAY_DOMAIN }}/privkey.pem
+      dest: /opt/aspera/httpgateway/config/server.key
+      owner: root
+      group: root
+      mode: '0400'
+      remote_src: yes
+    when: certbot_result is defined or cert_stat.stat.exists
+
+  - name: Copy config
+    copy:
+      src: /opt/aspera/httpgateway/config/default.properties
+      dest: /opt/aspera/httpgateway/config/gatewayconfig.properties
+      owner: root
+      group: root
+      remote_src: yes
+
+  - name: Start Gateway service
+    systemd:
+      name: aspera_httpgateway
+      state: started
+      enabled: yes
