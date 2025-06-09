@@ -1,0 +1,84 @@
+- name: Install Aspera Console on RHEL 8.5 VM
+  hosts: all
+  become: yes
+  vars_files:
+  - env_vars.yml
+  tasks:
+  - name: Change hostname to console
+    hostname:
+      name: console
+
+  - name: Upgrade installed software (DNF)
+    dnf:
+      name: "*"
+      state: latest
+
+  - name: Install packages
+    package:
+      name:
+      - nano
+      - net-tools
+      - perl
+      - util-linux-user
+      state: present
+
+  - name: Prepare install dir /opt/software
+    file:
+      path: /opt/software
+      state: directory
+
+  - name: Alias l='ls -lah' for itzuser
+    lineinfile:
+      path: /home/itzuser/.bashrc
+      line: "alias l='ls -lah'"
+      create: yes
+
+  - name: Alias l='ls -lah' for root
+    lineinfile:
+      path: /root/.bashrc
+      line: "alias l='ls -lah'"
+      create: yes
+
+  - name: Download console.rpm from Fix central
+    command: curl -o console.rpm {{ CONSOLE_RPM_URL }}
+    args:
+      chdir: /opt/software
+      creates: /opt/software/console.rpm
+    register: curl_result_console
+    retries: 3
+    delay: 5
+    until: curl_result_console.rc == 0
+
+  - name: Download common.rpm from Fix central
+    command: curl -o common.rpm {{ COMMON_RPM_URL }}
+    args:
+      chdir: /opt/software
+      creates: /opt/software/common.rpm
+    register: curl_result_common
+    retries: 3
+    delay: 5
+    until: curl_result_common.rc == 0
+
+  - name: Check if console exists
+    stat:
+      path: /opt/aspera/console
+    register: console
+
+  - name: Check if common exists
+    stat:
+      path: /opt/aspera/common
+    register: common
+
+  - name: Install Console RPM if not already installed
+    command: yum localinstall -y console.rpm
+    args:
+      chdir: /opt/software
+      creates: /opt/aspera/console
+    when: not console.stat.exists
+
+  - name: Install Common RPM if not already installed
+    command: yum localinstall -y common.rpm
+    args:
+      chdir: /opt/software
+      creates: /opt/aspera/common
+    when: not common.stat.exists
