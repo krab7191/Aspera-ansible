@@ -1,5 +1,7 @@
 # Installing Aspera with ansible
 
+Ansible playbooks to install Aspera HSTS, Faspex, Console, Common, and HTTP Gateway. Tested on RHEL 8.5
+
 ## Prep
 1. Get Techzone reservations or other suitable servers. [This environment](https://techzone.ibm.com/collection/aspera-lab/environments) was used for these instructions.
 2. Set appropriate environment variables in `env_vars.yml`

@@ -21,7 +21,6 @@
 
   - name: Stop Faspex service
     command: faspexctl stop
-    become: yes
 
   - name: Check if SSL certificate already exists
     stat:
@@ -37,11 +36,9 @@
 
   - name: Use Faspex to install certs
     command: asctl apache:install_ssl_cert /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/fullchain.pem /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/privkey.pem /etc/letsencrypt/live/{{ FASPEX_DOMAIN }}/chain.pem
-    become: yes
 
   - name: Start Faspex service
     command: faspexctl start
-    become: yes
 
   - name: Show Certbot output
     debug:
